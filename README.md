@@ -1,4 +1,4 @@
-# Ace of Diamonds
+# Ace of Diamond
 ## Objetivo
 Simulador estocástico en C para analizar récords de Home Runs en la MLB. Utiliza el método de Monte Carlo para generar una Campana de Gauss y ver si las temporadas más inusuales son matemáticamente predecibles o puras anomalías estadísticas.
 
