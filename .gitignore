@@ -1,0 +1,5 @@
+# Datos descargados y base generada: se reconstruyen con `python etl/run_all.py`
+data/raw/
+data/aod.sqlite
+__pycache__/
+engine/build/
