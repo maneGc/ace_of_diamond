@@ -31,9 +31,6 @@ La base de datos no se incluye en el repositorio (pesa ~665 MB). Se genera con u
 python etl/run_all.py
 ```
 
-Este comando descarga los archivos, crea `data/aod.sqlite` (5,6 M de apariciones al bate) y la verifica contra cifras oficiales: Bonds 2001 = 73 HR en 664 PA, Judge 2022 = 62 HR, total de la MLB en 2019 = 6 776 HR, entre otras.
-
-
 ## Créditos
 *The information used here was obtained free of charge from and is copyrighted by Retrosheet. Interested parties may contact Retrosheet at "www.retrosheet.org".*
 
