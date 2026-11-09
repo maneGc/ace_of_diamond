@@ -22,15 +22,6 @@ Simulador estocástico en C para analizar récords de Home Runs en la MLB. Utili
 * **Validación:** backtesting contra temporadas reales y comparación entre versiones del modelo.
 * **Web local:** gráficas y resultados en el navegador.
 
-## Estado
-
-| Etapa | Contenido | Estado |
-|---|---|---|
-| 1 · Datos | Retrosheet → base SQLite validada | ✅ |
-| 2 · Modelo v1 y v2 | Talento (Bayes) + motor Monte Carlo en C | pendiente |
-| 3 · Modelo v3 y predicción | Contexto (regresión logística) + PA aleatorias | pendiente |
-| 4 · Validación y web | Backtesting + web local | pendiente |
-
 ## Datos
 Datos públicos de **Retrosheet** (cada jugada de cada partido de la MLB, 1995–2025) y del **Chadwick Baseball Bureau Register** (IDs y fechas de nacimiento).
 
@@ -41,14 +32,6 @@ python etl/run_all.py
 ```
 
 Este comando descarga los archivos, crea `data/aod.sqlite` (5,6 M de apariciones al bate) y la verifica contra cifras oficiales: Bonds 2001 = 73 HR en 664 PA, Judge 2022 = 62 HR, total de la MLB en 2019 = 6 776 HR, entre otras.
-
-| Archivo | Qué hace |
-|---|---|
-| `etl/config.py` | Rutas, rango de temporadas y direcciones de descarga |
-| `etl/download.py` | Descarga archivos de jugadas, rosters, estadios e IDs |
-| `etl/parse_events.py` | Convierte el formato de Retrosheet en una fila por aparición al bate |
-| `etl/build_db.py` | Crea la base SQLite y calcula los totales por temporada |
-| `etl/validate.py` | Compara con cifras oficiales |
 
 La explicación paso a paso está en [`docs/etapa1.md`](docs/etapa1.md).
 
