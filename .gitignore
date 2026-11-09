@@ -3,3 +3,7 @@ data/raw/
 data/aod.sqlite
 __pycache__/
 engine/build/
+
+# Entornos virtuales de Python
+aod/
+.venv/

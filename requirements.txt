@@ -1,0 +1,6 @@
+# Dependencias de Python de Ace of Diamond
+# Instalar (con el entorno virtual activado):  pip install -r requirements.txt
+#
+# Etapa 1 (datos): solo usa la biblioteca estándar de Python, no requiere paquetes.
+# El motor Monte Carlo está en C y se compila aparte (no se instala con pip).
+# Los paquetes de la web local se agregarán en la etapa 4.
