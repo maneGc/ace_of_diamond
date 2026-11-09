@@ -8,7 +8,7 @@
 | **Contacto** | emmanuelgc241@gmail.com |
 
 ## Objetivo
-Simulador estocástico en C para analizar récords de Home Runs en la MLB. Utiliza el método de Monte Carlo para simular miles de temporadas posibles de un jugador y responder dos preguntas:
+Simulador estocástico en C para analizar récords de Home Runs en la MLB. Utiliza el método de Monte Carlo para simular hasta un millon de temporadas posibles de un jugador y responder dos preguntas:
 
 1. **Análisis:** ¿qué tan inusual fue una temporada histórica (p. ej. Bonds 2001, Judge 2022)? ¿Era predecible o fue una anomalía estadística?
 2. **Predicción:** ¿cuántos jonrones podría pegar un jugador en una temporada que todavía no empieza?
