@@ -15,12 +15,6 @@ Simulador estocástico en C para analizar récords de Home Runs en la MLB. Utili
 1. **Análisis:** ¿qué tan inusual fue una temporada histórica (p. ej. Bonds 2001, Judge 2022)? ¿Era predecible o fue una anomalía estadística?
 2. **Predicción:** ¿cuántos jonrones podría pegar un jugador en una temporada que todavía no empieza?
 
-## ¿Qué hace?
-* **Simula temporadas en C:** un millón de temporadas posibles de un jugador con el método de Monte Carlo.
-* **Estima el talento del jugador** con estadística bayesiana, a partir de sus temporadas anteriores, ajustado por su **edad** y por la **época** (años con más o menos jonrones en la liga).
-* **Considera el contexto de cada turno:** estadio, pitcher rival y clima.
-* **Mide qué tan inusual fue una temporada** o **predice** una futura.
-
 ## Modelo matemático
 Cada turno al bate se modela como un experimento aleatorio con una pequeña probabilidad de jonrón, y una temporada es la suma de todos sus turnos:
 
