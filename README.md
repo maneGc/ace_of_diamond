@@ -25,11 +25,23 @@ Simulador estocástico en C para analizar récords de Home Runs en la MLB. Utili
 Cada turno al bate se modela como un experimento aleatorio con una pequeña probabilidad de jonrón, y una temporada es la suma de todos sus turnos:
 
 ```math
-HR = \sum_{j=1}^{PA} Y_j, \qquad Y_j \sim \text{Bernoulli}(\theta)
+HR = \sum_{j=1}^{PA} Y_j, \qquad Y_j \sim \text{Bernoulli}(p_j)
 ```
 
-1. **Talento del jugador.** La probabilidad real de jonrón $`\theta`$ no se conoce, así que se modela como una distribución: $`\theta \sim \text{Beta}(\alpha, \beta)`$. Se parte del promedio de la liga y se actualiza con las tres temporadas anteriores del jugador (estadística bayesiana): con pocos datos pesa más la liga; con muchos, el jugador.
-2. **Contexto del turno.** El estadio, el pitcher rival y el clima aumentan o reducen esa probabilidad en cada turno.
+La probabilidad de jonrón en cada turno, $`p_j`$, combina el talento del jugador con el contexto de ese turno:
+
+```math
+\text{logit}(p_j) = \text{logit}(\theta) + c_j
+```
+
+donde el talento del jugador sigue una distribución Beta:
+
+```math
+\theta \sim \text{Beta}(\alpha, \beta)
+```
+
+1. **Talento del jugador ($`\theta`$).** No se conoce con exactitud, así que se modela como una distribución Beta. 
+2. **Contexto del turno ($`c_j`$).** El estadio, el pitcher rival y el clima aumentan o reducen la probabilidad en cada turno. Se combinan en escala logit para que la probabilidad siempre quede entre 0 y 1.
 3. **Simulación Monte Carlo.** Se repite la temporada $`N = 10^6`$ veces: en cada una se sortea un talento posible y se juega cada turno. La probabilidad de un resultado es la proporción de temporadas simuladas en que ocurre:
 
 ```math
