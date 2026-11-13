@@ -53,7 +53,7 @@ Aquí $`e_t`$ es la edad en la temporada simulada y $`e_k`$ las edades en sus te
 c_j = \sum_{k} \beta_k\, x_{jk}
 ```
 
-Los coeficientes $`\beta_k`$ indican cuánto influye cada factor. No se fijan a mano: se estimarán con regresión logística por máxima verosimilitud (método de Newton–Raphson), usando los turnos de temporadas anteriores y dejando $`\text{logit}(\theta)`$ fijo (*offset*), para que la regresión mida solo el efecto del contexto.
+Los coeficientes $`\beta_k`$ indican cuánto influye cada factor. No se fijan a mano: se estimarán con regresión logística, usando los turnos de temporadas anteriores y dejando $`\text{logit}(\theta)`$ fijo , para que la regresión mida solo el efecto del contexto.
 
 4. **Simulación Monte Carlo.** Se repite la temporada $`N = 10^6`$ veces: en cada una se sortea un talento posible y se juega cada turno. La probabilidad de un resultado es la proporción de temporadas simuladas en que ocurre:
 
