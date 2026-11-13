@@ -28,15 +28,34 @@ La probabilidad de jonrón en cada turno, $`p_j`$, combina el talento del jugado
 \text{logit}(p_j) = \text{logit}(\theta) + c_j
 ```
 
-donde el talento del jugador sigue una distribución Beta:
+donde el talento del jugador combina una distribución Beta con un ajuste por edad:
 
 ```math
-\theta \sim \text{Beta}(\alpha, \beta)
+\text{logit}(\theta) = \text{logit}(\tilde\theta) + \Delta_{\text{edad}}, \qquad \tilde\theta \sim \text{Beta}(\alpha, \beta)
 ```
 
-1. **Talento del jugador ($`\theta`$).** No se conoce con exactitud, así que se modela como una distribución Beta. 
-2. **Contexto del turno ($`c_j`$).** El estadio, el pitcher rival y el clima aumentan o reducen la probabilidad en cada turno. Se combinan en escala logit para que la probabilidad siempre quede entre 0 y 1.
-3. **Simulación Monte Carlo.** Se repite la temporada $`N = 10^6`$ veces: en cada una se sortea un talento posible y se juega cada turno. La probabilidad de un resultado es la proporción de temporadas simuladas en que ocurre:
+1. **Talento del jugador ($`\tilde\theta`$).** No se conoce con exactitud, así que se modela como una distribución Beta, estimada con sus tres temporadas anteriores y el promedio de la liga (estadística bayesiana).
+2. **Ajuste por edad ($`\Delta_{\text{edad}}`$).** El talento sube con la edad hasta un pico y después baja. Con los jugadores que tienen dos temporadas seguidas se mide cuánto cambia su tasa de jonrones, en escala logit, de un año al siguiente, y se ajusta una recta por mínimos cuadrados. Sumando esos cambios año con año se obtiene la curva de edad $`a(e)`$:
+
+```math
+\delta(e) = b_0 + b_1 e, \qquad a(e+1) - a(e) = \delta(e), \qquad a(27) = 0
+```
+
+```math
+\Delta_{\text{edad}} = a(e_t) - \frac{\sum_k w_k\, a(e_k)}{\sum_k w_k}
+```
+
+Aquí $`e_t`$ es la edad en la temporada simulada y $`e_k`$ las edades en sus temporadas anteriores, con pesos $`w_k = 1,\ 0.8,\ 0.6`$. Si el jugador ya pasó el pico, $`\Delta_{\text{edad}}`$ es negativo y su talento baja.
+
+3. **Contexto del turno ($`c_j`$).** El estadio, el pitcher rival, la mano del pitcher y el clima aumentan o reducen la probabilidad en cada turno. Cada factor se representa con una variable $`x_{jk}`$ y se suman en escala logit, para que la probabilidad siempre quede entre 0 y 1:
+
+```math
+c_j = \sum_{k} \beta_k\, x_{jk}
+```
+
+Los coeficientes $`\beta_k`$ indican cuánto influye cada factor. No se fijan a mano: se estimarán con regresión logística por máxima verosimilitud (método de Newton–Raphson), usando los turnos de temporadas anteriores y dejando $`\text{logit}(\theta)`$ fijo (*offset*), para que la regresión mida solo el efecto del contexto.
+
+4. **Simulación Monte Carlo.** Se repite la temporada $`N = 10^6`$ veces: en cada una se sortea un talento posible y se juega cada turno. La probabilidad de un resultado es la proporción de temporadas simuladas en que ocurre:
 
 ```math
 \hat{P}(HR \ge x) = \frac{\text{temporadas simuladas con } HR \ge x}{N}
