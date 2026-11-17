@@ -34,8 +34,21 @@ donde el talento del jugador combina una distribución Beta con un ajuste por ed
 \text{logit}(\theta) = \text{logit}(\tilde\theta) + \Delta_{\text{edad}}, \qquad \tilde\theta \sim \text{Beta}(\alpha, \beta)
 ```
 
-1. **Talento del jugador ($`\tilde\theta`$).** No se conoce con exactitud, así que se modela como una distribución Beta, estimada con sus tres temporadas anteriores y el promedio de la liga (estadística bayesiana).
-2. **Ajuste por edad ($`\Delta_{\text{edad}}`$).** El talento sube con la edad hasta un pico y después baja. Con los jugadores que tienen dos temporadas seguidas se mide cuánto cambia su tasa de jonrones, en escala logit, de un año al siguiente, y se ajusta una recta por mínimos cuadrados. Sumando esos cambios año con año se obtiene la curva de edad $`a(e)`$:
+1. **Talento del jugador ($`\tilde\theta`$).** No se conoce con exactitud, así que se modela como una distribución Beta, estimada con estadística bayesiana: el promedio de la liga aporta unos turnos imaginarios ($`\alpha_0, \beta_0`$) y a ellos se suman los jonrones y turnos de sus tres temporadas anteriores, con pesos $`w_k = 1,\ 0.8,\ 0.6`$:
+
+```math
+\alpha = \alpha_0 + \sum_k w_k\, HR^*_k, \qquad \beta = \beta_0 + \sum_k w_k\,(PA_k - HR^*_k)
+```
+
+2. **Ajuste por época ($`HR^*_k`$).** No todos los años la liga pega los mismos jonrones, así que antes de sumarlos cada temporada anterior se lleva al ambiente de la temporada analizada:
+
+```math
+HR^*_k = PA_k \cdot \text{expit}\!\left(\text{logit}\,\frac{HR_k}{PA_k} - \text{logit}\,\lambda_k + \text{logit}\,\lambda_t\right)
+```
+
+Aquí $`\lambda_k`$ es la tasa de jonrones (HR/PA) de su liga en esa temporada y $`\lambda_t`$ la de la temporada analizada; $`\text{logit}(p) = \ln\frac{p}{1-p}`$ y expit es su inversa.
+
+3. **Ajuste por edad ($`\Delta_{\text{edad}}`$).** El talento sube con la edad hasta un pico y después baja. Con los jugadores que tienen dos temporadas seguidas se mide cuánto cambia su tasa de jonrones, en escala logit, de un año al siguiente, y se ajusta una recta por mínimos cuadrados. Sumando esos cambios año con año se obtiene la curva de edad $`a(e)`$:
 
 ```math
 \delta(e) = b_0 + b_1 e, \qquad a(e+1) - a(e) = \delta(e), \qquad a(27) = 0
@@ -47,15 +60,15 @@ donde el talento del jugador combina una distribución Beta con un ajuste por ed
 
 Aquí $`e_t`$ es la edad en la temporada simulada y $`e_k`$ las edades en sus temporadas anteriores, con pesos $`w_k = 1,\ 0.8,\ 0.6`$. Si el jugador ya pasó el pico, $`\Delta_{\text{edad}}`$ es negativo y su talento baja.
 
-3. **Contexto del turno ($`c_j`$).** El estadio, el pitcher rival, la mano del pitcher y el clima aumentan o reducen la probabilidad en cada turno. Cada factor se representa con una variable $`x_{jk}`$ y se suman en escala logit, para que la probabilidad siempre quede entre 0 y 1:
+4. **Contexto del turno ($`c_j`$).** El estadio, el pitcher rival, la mano del pitcher y el clima aumentan o reducen la probabilidad en cada turno. Cada factor se representa con una variable $`x_{jk}`$ y se suman en escala logit, para que la probabilidad siempre quede entre 0 y 1:
 
 ```math
 c_j = \sum_{k} \beta_k\, x_{jk}
 ```
 
-Los coeficientes $`\beta_k`$ indican cuánto influye cada factor. No se fijan a mano: se estimarán con regresión logística, usando los turnos de temporadas anteriores y dejando $`\text{logit}(\theta)`$ fijo , para que la regresión mida solo el efecto del contexto.
+Los coeficientes $`\beta_k`$ indican cuánto influye cada factor. No se fijan a mano: se estimarán con regresión logística, usando los turnos de temporadas anteriores y dejando $`\text{logit}(\theta)`$ fijo, para que la regresión mida solo el efecto del contexto.
 
-4. **Simulación Monte Carlo.** Se repite la temporada $`N = 10^6`$ veces: en cada una se sortea un talento posible y se juega cada turno. La probabilidad de un resultado es la proporción de temporadas simuladas en que ocurre:
+5. **Simulación Monte Carlo.** Se repite la temporada $`N = 10^6`$ veces: en cada una se sortea un talento posible y se juega cada turno. La probabilidad de un resultado es la proporción de temporadas simuladas en que ocurre:
 
 ```math
 \hat{P}(HR \ge x) = \frac{\text{temporadas simuladas con } HR \ge x}{N}
