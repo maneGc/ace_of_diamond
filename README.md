@@ -25,7 +25,7 @@ HR = \sum_{j=1}^{PA} Y_j, \qquad Y_j \sim \text{Bernoulli}(p_j)
 La probabilidad de jonrón en cada turno, $`p_j`$, combina el talento del jugador con el contexto de ese turno:
 
 ```math
-\text{logit}(p_j) = \text{logit}(\theta) + c_j
+p_j = \text{expit}\big(\text{logit}(\theta) + c_j\big)
 ```
 
 donde el talento del jugador combina una distribución Beta con un ajuste por edad:
