@@ -7,3 +7,7 @@ engine/build/
 # Entornos virtuales de Python
 aod/
 .venv/
+
+# Ejecutable del demo
+/demo
+/demo.exe
