@@ -79,7 +79,7 @@ De ahí salen el número esperado de jonrones, un intervalo de confianza y el p-
 ## Avance 1: demo
 Este avance calcula, paso a paso, el talento $`\theta`$ de un jugador con los datos reales: prior de la liga, ajuste por época, Bayes y ajuste por edad (todavía sin contexto ni simulación Monte Carlo). Ejemplo con Barry Bonds en 2001:
 
-![Demo del Avance 1: talento de Barry Bonds en 2001](docs/demo.gif)
+<p align="center"><img src="docs/demo.gif" alt="Demo del Avance 1: talento de Barry Bonds en 2001" width="760" height="650"></p>
 
 En Windows se ejecuta con doble clic en `demo.bat` (necesita `gcc`, por ejemplo de MSYS2).
 
