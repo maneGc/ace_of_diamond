@@ -76,6 +76,13 @@ Los coeficientes $`\beta_k`$ indican cuánto influye cada factor. No se fijan a 
 
 De ahí salen el número esperado de jonrones, un intervalo de confianza y el p-value, que indica qué tan inusual fue la temporada real.
 
+## Avance 1: demo
+Este avance calcula, paso a paso, el talento $`\theta`$ de un jugador con los datos reales: prior de la liga, ajuste por época, Bayes y ajuste por edad (todavía sin contexto ni simulación Monte Carlo). Ejemplo con Barry Bonds en 2001:
+
+![Demo del Avance 1: talento de Barry Bonds en 2001](docs/demo.gif)
+
+En Windows se ejecuta con doble clic en `demo.bat` (necesita `gcc`, por ejemplo de MSYS2).
+
 ## Datos
 Datos públicos de **Retrosheet** (cada jugada de cada partido de la MLB, 1995–2025) y del **Chadwick Baseball Bureau Register** (IDs y fechas de nacimiento).
 
