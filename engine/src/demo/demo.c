@@ -1,20 +1,19 @@
 /*
- * demo.c — Demo del Avance 1: calcula, paso a paso, el talento θ de un jugador.
+ * demo.c — Demo de la capa 0: calcula, paso a paso, el talento θ de un jugador
+ * solo con sus propios datos: θ = Σ HR / Σ PA de sus 3 temporadas anteriores.
  *
- * Usa solo data.c, prior.c, aging.c y talent.c (todavía sin contexto ni Monte Carlo).
+ * Usa data.c y talent.c.
  *
  * Compilar, desde la carpeta del repositorio:
- *   gcc -std=c11 -O2 -Iengine/include engine/src/data.c engine/src/prior.c engine/src/aging.c engine/src/talent.c engine/src/demo/demo.c -lm -o demo
+ *   gcc -std=c11 -O2 -Iengine/include engine/src/data.c engine/src/talent.c engine/src/demo/demo.c -o demo
  *
  * Ejecutar:
  *   ./demo                              pregunta el jugador y la temporada
  *   ./demo "Aaron Judge" 2022
  *   ./demo judge                        sin temporada: usa su temporada con más HR
- *   ./demo "Barry Bonds" 2001 --sin-edad --sin-era
  *   ./demo bondb001 2001                también acepta el id de Retrosheet
  */
 #include <ctype.h>
-#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -57,7 +56,7 @@ static const char *find_data_dir(void)
 
 static void usage(void)
 {
-    fprintf(stderr, "Uso: demo [\"Nombre Apellido\" | apellido | id] [temporada] [--sin-era] [--sin-edad]\n"
+    fprintf(stderr, "Uso: demo [\"Nombre Apellido\" | apellido | id] [temporada]\n"
                     "Sin jugador, el demo te lo pregunta.\n"
                     "Ejemplo: demo \"Aaron Judge\" 2022\n");
 }
@@ -149,7 +148,6 @@ static void list_players(const Dataset *ds, const Player **c, int n)
         int first, last, best, best_hr;
         player_seasons(ds, c[i], &first, &last, &best, &best_hr);
         printf("   %2d) %s %s  (id %s", i + 1, c[i]->first, c[i]->last, c[i]->id);
-        if (c[i]->by) printf(", nació en %d", c[i]->by);
         if (first) printf(", jugó %d–%d", first, last);
         printf(")\n");
     }
@@ -210,79 +208,48 @@ static int ask_season(const Dataset *ds, const Player *pl)
 
 /* ------------------------------------------------------------ el análisis */
 
-static int analyze(const Dataset *ds, const Player *pl, int t, TalentOpts opt)
+/* Última temporada que hay en los datos. */
+static int last_data_season(const Dataset *ds)
+{
+    int last = 0;
+    for (int i = 0; i < ds->ns; i++)
+        if (ds->s[i].season > last) last = ds->s[i].season;
+    return last;
+}
+
+static int analyze(const Dataset *ds, const Player *pl, int t)
 {
     if (t < 1998 || t > 2026) {
         fprintf(stderr, "Usa una temporada entre 1998 y 2026: el modelo necesita los 3 años anteriores (los datos empiezan en 1995).\n");
         return 1;
     }
 
-    /* ---- el modelo: prior de la liga, curva de edad y talento del jugador */
-    const Prior pr = prior_estimate(ds, t, 3, 300);    /* liga: t−3 … t−1, ≥ 300 PA */
-    const Aging ag = aging_fit(ds, t - 1, 200);        /* pares de temporadas hasta t−1 */
+    /* ---- el modelo: el talento sale solo de los datos del jugador */
     Talent tl;
-    talent_estimate(ds, &pr, &ag, pl, t, opt, &tl);
-    if (tl.nseasons == 0) {
+    if (talent_estimate(ds, pl, t, &tl)) {
         fprintf(stderr, "%s %s no jugó entre %d y %d: no hay datos para estimar su talento.\n",
                 pl->first, pl->last, t - 3, t - 1);
         return 1;
     }
     const SeasonRow *cur = data_season(ds, pl->id, t);
-    const int future = isnan(data_lambda(ds, t, 'A')) && isnan(data_lambda(ds, t, 'N'));
+    const int future = t > last_data_season(ds);
 
-    printf("\nAce of Diamond · Avance 1 · talento de %s %s para %d", pl->first, pl->last, t);
-    if (tl.age_t > 0) printf(" (%d años)", tl.age_t);
-    printf("\n");
+    printf("\nAce of Diamond · Capa 0 · talento de %s %s para %d\n", pl->first, pl->last, t);
 
-    /* ---- paso 1: prior.c */
-    printf("\n1) Prior de la liga · prior.c\n");
-    printf("   %d temporadas regulares (>= 300 PA) de %d a %d\n", pr.J, t - 3, t - 1);
-    printf("   m     = %.3f %%      promedio de HR/PA\n", 100 * pr.m);
-    printf("   s²    = %.3e    cuánto varían los jugadores entre sí\n", pr.s2);
-    printf("   ruido = %.3e    la parte que es solo suerte\n", pr.noise);
-    printf("   v     = %.3e    varianza del talento real (%.0f %% de s²)\n", pr.v, 100 * pr.v / pr.s2);
-    printf("   n0    = %.1f turnos imaginarios  ->  Beta(α0 = %.2f, β0 = %.2f)\n", pr.n0, pr.a0, pr.b0);
-
-    /* ---- paso 2: talent.c, ajuste por época y pesos */
-    printf("\n2) Temporadas anteriores · talent.c\n");
-    if (!opt.use_era) printf("   (ajuste por época desactivado: HR* = HR)\n");
-    printf("   año      PA    HR   λ liga     HR*    peso\n");
+    /* ---- paso 1: sus temporadas anteriores */
+    printf("\n1) Sus temporadas anteriores · talent.c\n");
+    printf("   año      PA    HR    HR/PA\n");
     for (int i = 0; i < tl.nseasons; i++)
-        printf("   %d   %4d   %3d   %.2f %%   %6.2f    %.1f\n",
-               tl.season[i], tl.pa[i], tl.hr[i], 100 * tl.lambda_s[i], tl.hr_star[i], tl.w[i]);
-    printf("   λ de la liga en %d = %.2f %%%s\n", t, 100 * tl.lambda_t, future ? " (último año con datos)" : "");
-    printf("   Ponderado: %.1f HR en %.1f PA  ->  r = %.2f %%\n", tl.hr_w, tl.n, 100 * tl.r);
+        printf("   %d   %4d   %3d   %5.2f %%\n", tl.season[i], tl.pa[i], tl.hr[i], 100.0 * tl.hr[i] / tl.pa[i]);
+    printf("   total %5d   %3d\n", tl.pa_sum, tl.hr_sum);
+    if (tl.nseasons < 3) printf("   (solo jugó %d de las 3 temporadas: se usan las que tiene)\n", tl.nseasons);
 
-    /* ---- paso 3: Bayes */
-    printf("\n3) Bayes: liga + jugador · talent.c\n");
-    printf("   α = α0 + HR*        = %.2f + %.2f = %.2f\n", pr.a0, tl.hr_w, tl.alpha);
-    printf("   β = β0 + (PA − HR*) = %.2f + %.2f = %.2f\n", pr.b0, tl.n - tl.hr_w, tl.beta);
-    printf("   Centro de la Beta = α / (α + β) = %.2f %%\n", 100 * tl.mean_tilde);
-    printf("   Peso del jugador  = n / (n + n0) = %.1f %%   (la liga pesa %.1f %%)\n",
-           100 * tl.w_player, 100 * (1 - tl.w_player));
-
-    /* ---- paso 4: aging.c */
-    printf("\n4) Edad · aging.c\n");
-    if (!opt.use_age) {
-        printf("   (ajuste por edad desactivado: Δ = 0)\n");
-    } else if (tl.age_t <= 0 || ag.npairs == 0) {
-        printf("   Sin fecha de nacimiento o sin curva: Δ = 0\n");
-    } else {
-        int emin = 200, emax = 0;
-        for (int i = 0; i < tl.nseasons; i++) {
-            const int e = age_at(pl, tl.season[i]);
-            if (e > 0 && e < emin) emin = e;
-            if (e > emax) emax = e;
-        }
-        printf("   Recta δ(e) = %.4f %+.5f·e, ajustada con %d pares de temporadas", ag.b0, ag.b1, ag.npairs);
-        if (ag.b1 < 0) printf(" · pico ≈ %.1f años", -ag.b0 / ag.b1);
-        printf("\n   Edad %d frente a sus temporadas a los %d–%d  ->  Δ = %+.3f (escala logit)\n",
-               tl.age_t, emin, emax, tl.delta);
-    }
+    /* ---- paso 2: el talento */
+    printf("\n2) Talento · talent.c\n");
+    printf("   θ = Σ HR / Σ PA = %d / %d = %.2f %% por turno\n", tl.hr_sum, tl.pa_sum, 100 * tl.theta);
 
     /* ---- resultado */
     printf("\nResultado\n");
-    printf("   θ = expit(logit(%.2f %%) %+.3f) = %.2f %% por turno\n", 100 * tl.mean_tilde, tl.delta, 100 * tl.theta);
     if (cur) {
         printf("   En %d tuvo %d turnos  ->  HR esperados ≈ θ · PA = %.1f\n", t, cur->pa, tl.theta * cur->pa);
         printf("   HR reales: %d\n", cur->hr);
@@ -291,7 +258,6 @@ static int analyze(const Dataset *ds, const Player *pl, int t, TalentOpts opt)
     } else {
         printf("   %s %s no jugó en %d.\n", pl->first, pl->last, t);
     }
-    printf("\n   Siguiente etapa: contexto cⱼ y simulación Monte Carlo para medir qué tan probable es ese resultado.\n");
     return 0;
 }
 
@@ -305,11 +271,8 @@ int main(int argc, char **argv)
 #endif
     const char *name = NULL;
     int t = 0, npos = 0;
-    TalentOpts opt = {1, 1};
     for (int i = 1; i < argc; i++) {
-        if      (!strcmp(argv[i], "--sin-era"))  opt.use_era = 0;
-        else if (!strcmp(argv[i], "--sin-edad")) opt.use_age = 0;
-        else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) { usage(); return 0; }
+        if      (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) { usage(); return 0; }
         else if (npos == 0) { name = argv[i]; npos++; }
         else if (npos == 1) { t = atoi(argv[i]); npos++; }
         else { usage(); return 1; }
@@ -324,13 +287,13 @@ int main(int argc, char **argv)
 
     if (!name) {
         /* ---- modo interactivo: pregunta jugador y temporada hasta que el usuario salga */
-        printf("\nAce of Diamond · Avance 1 · talento θ de un jugador\n");
+        printf("\nAce of Diamond · Capa 0 · talento θ de un jugador con sus propios datos\n");
         for (;;) {
             const Player *pl = ask_player(&ds);
             if (!pl) break;
             const int season = ask_season(&ds, pl);
             if (!season) break;
-            analyze(&ds, pl, season, opt);
+            analyze(&ds, pl, season);
         }
         printf("\n");
         quiet_exit = 1;
@@ -351,7 +314,7 @@ int main(int argc, char **argv)
                 player_seasons(&ds, c[0], &first, &last, &best, &best_hr);
                 t = best ? best : last + 1;
             }
-            rc = analyze(&ds, c[0], t, opt);
+            rc = analyze(&ds, c[0], t);
             printf("\n");
         }
     }

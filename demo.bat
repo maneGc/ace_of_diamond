@@ -1,5 +1,5 @@
 @echo off
-rem demo.bat - compila (si hace falta) y ejecuta el demo del Avance 1.
+rem demo.bat - compila (si hace falta) y ejecuta el demo de la capa 0.
 rem Uso:  demo.bat                       Barry Bonds, 2001
 rem       demo.bat "Aaron Judge" 2022
 rem       doble clic en el archivo tambien funciona.
@@ -15,7 +15,7 @@ where gcc >nul 2>nul || (
     goto end
 )
 echo Compilando demo.exe ...
-gcc -std=c11 -O2 -Iengine/include engine/src/data.c engine/src/prior.c engine/src/aging.c engine/src/talent.c engine/src/demo/demo.c -lm -o demo.exe || goto end
+gcc -std=c11 -O2 -Iengine/include engine/src/data.c engine/src/talent.c engine/src/demo/demo.c -o demo.exe || goto end
 
 :run
 "%~dp0demo.exe" %*
