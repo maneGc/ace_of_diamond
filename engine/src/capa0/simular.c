@@ -7,11 +7,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "aod.h"
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 #define N_SIM 1000000
 
 int main(int argc, char **argv)
 {
+#ifdef _WIN32
+    SetConsoleOutputCP(CP_UTF8);                         /* para que θ se vea bien en la consola de Windows */
+#endif
     if (argc < 3) { fprintf(stderr, "Uso: simular \"Nombre Apellido\" temporada\n"); return 1; }
     const int t = atoi(argv[2]);
 
