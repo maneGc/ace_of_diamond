@@ -31,6 +31,7 @@ int main(int argc, char **argv)
     }
     const SeasonRow *cur = data_season(&ds, pl->id, t);
     const int pa = cur ? cur->pa : 600;                  /* turnos de esa temporada; si no jugó, 600 */
+    const int real = cur ? cur->hr : -1;                 /* HR que de verdad pegó; -1 si no hay datos */
 
     long hist[HIST_MAX + 1];
     simular_temporadas(tl.theta, pa, N_SIM, 2001, hist);
@@ -39,9 +40,9 @@ int main(int argc, char **argv)
     snprintf(ruta, sizeof ruta, "experimentos/capa0/%s_%d.csv", pl->id, t);
     FILE *f = fopen(ruta, "w");
     if (!f) { fprintf(stderr, "No pude escribir %s\n", ruta); return 1; }
-    fprintf(f, "jugador,temporada,theta,pa,hr,temporadas\n");
+    fprintf(f, "jugador,temporada,theta,pa,real,hr,temporadas\n");
     for (int k = 0; k <= HIST_MAX; k++)
-        if (hist[k]) fprintf(f, "%s %s,%d,%.6f,%d,%d,%ld\n", pl->first, pl->last, t, tl.theta, pa, k, hist[k]);
+        if (hist[k]) fprintf(f, "%s %s,%d,%.6f,%d,%d,%d,%ld\n", pl->first, pl->last, t, tl.theta, pa, real, k, hist[k]);
     fclose(f);
 
     printf("%s %s %d: θ = %.2f %%, %d turnos, %d temporadas simuladas -> %s\n",
