@@ -17,3 +17,5 @@ aod/
 # Resultados de las simulaciones (se regeneran con ./simular y el script de Python)
 experimentos/capa0/*
 !experimentos/capa0/.gitkeep
+/comparar
+/comparar.exe
