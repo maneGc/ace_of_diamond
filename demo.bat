@@ -1,5 +1,5 @@
 @echo off
-rem demo.bat - compila (si hace falta) y ejecuta el demo de la capa 0.
+rem demo.bat - compila (si hace falta) y ejecuta el demo del talento.
 rem Uso:  demo.bat                       Barry Bonds, 2001
 rem       demo.bat "Aaron Judge" 2022
 rem       doble clic en el archivo tambien funciona.

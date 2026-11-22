@@ -1,9 +1,12 @@
 /*
  * aod.h — Ace of Diamond: declaraciones del motor en C.
  *
- * Capa 0: tasa cruda. El talento del jugador sale solo de sus propios datos.
+ * El talento del jugador sale solo de sus propios datos, por capas:
+ *   capa 0 (tasa cruda): θ = Σ HR / Σ PA de sus 3 temporadas anteriores
+ *   capa 1 (pesos):      θ = Σ w·HR / Σ w·PA, con w = 1, 0.8, 0.6 para t−1, t−2, t−3
+ *
  *   data.c        lectura de los CSV de data/inputs/
- *   talent.c      talento del jugador: θ = Σ HR / Σ PA de sus 3 temporadas anteriores
+ *   talent.c      talento del jugador (capa 0 o capa 1)
  *   rng.c         números aleatorios uniformes U(0,1)
  *   simulacion.c  temporadas simuladas: cada turno es un ensayo de Bernoulli(θ)
  */
@@ -27,13 +30,17 @@ const Player    *data_find_player(const Dataset *ds, const char *query); /* id o
 const SeasonRow *data_season(const Dataset *ds, const char *id, int season);
 
 /* ---------------------------------------------------------------- talento del jugador */
+#define CAPA_ACTUAL 1                  /* la capa más nueva de esta rama */
 typedef struct {
     int    nseasons;                   /* temporadas anteriores con turnos (0 a 3) */
     int    season[3], pa[3], hr[3];    /* t−1, t−2, t−3 (las que existan) */
-    int    pa_sum, hr_sum;             /* Σ PA y Σ HR */
-    double theta;                      /* θ = Σ HR / Σ PA */
+    double w[3];                       /* peso de cada temporada */
+    int    pa_sum, hr_sum;             /* Σ PA y Σ HR (sin pesos) */
+    double pa_w, hr_w;                 /* Σ w·PA y Σ w·HR */
+    double theta;                      /* θ = Σ w·HR / Σ w·PA */
 } Talent;
-int talent_estimate(const Dataset *ds, const Player *pl, int t, Talent *out);   /* 0 = ok */
+/* capa = 0: todas las temporadas pesan 1 · capa = 1: pesos 1, 0.8, 0.6 */
+int talent_estimate(const Dataset *ds, const Player *pl, int t, int capa, Talent *out);   /* 0 = ok */
 
 /* ---------------------------------------------------------------- números aleatorios */
 typedef struct { uint64_t s[4]; } Rng;                 /* estado del generador xoshiro256** */

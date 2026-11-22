@@ -1,6 +1,7 @@
 /*
- * demo.c — Demo de la capa 0: calcula, paso a paso, el talento θ de un jugador
- * solo con sus propios datos: θ = Σ HR / Σ PA de sus 3 temporadas anteriores.
+ * demo.c — Demo del talento: calcula, paso a paso, el θ de un jugador con la capa más
+ * nueva (CAPA_ACTUAL), solo con sus propios datos: θ = Σ w·HR / Σ w·PA de sus 3
+ * temporadas anteriores, con pesos w = 1, 0.8, 0.6 (capa 1).
  *
  * Usa data.c y talent.c.
  *
@@ -226,7 +227,7 @@ static int analyze(const Dataset *ds, const Player *pl, int t)
 
     /* ---- el modelo: el talento sale solo de los datos del jugador */
     Talent tl;
-    if (talent_estimate(ds, pl, t, &tl)) {
+    if (talent_estimate(ds, pl, t, CAPA_ACTUAL, &tl)) {
         fprintf(stderr, "%s %s no jugó entre %d y %d: no hay datos para estimar su talento.\n",
                 pl->first, pl->last, t - 3, t - 1);
         return 1;
@@ -234,19 +235,21 @@ static int analyze(const Dataset *ds, const Player *pl, int t)
     const SeasonRow *cur = data_season(ds, pl->id, t);
     const int future = t > last_data_season(ds);
 
-    printf("\nAce of Diamond · Capa 0 · talento de %s %s para %d\n", pl->first, pl->last, t);
+    printf("\nAce of Diamond · Capa %d · talento de %s %s para %d\n", CAPA_ACTUAL, pl->first, pl->last, t);
 
     /* ---- paso 1: sus temporadas anteriores */
     printf("\n1) Sus temporadas anteriores · talent.c\n");
-    printf("   año      PA    HR    HR/PA\n");
+    printf("   año      PA    HR    HR/PA   peso   peso·PA   peso·HR\n");
     for (int i = 0; i < tl.nseasons; i++)
-        printf("   %d   %4d   %3d   %5.2f %%\n", tl.season[i], tl.pa[i], tl.hr[i], 100.0 * tl.hr[i] / tl.pa[i]);
-    printf("   total %5d   %3d\n", tl.pa_sum, tl.hr_sum);
+        printf("   %d   %4d   %3d   %5.2f %%   %.1f   %7.1f   %7.1f\n", tl.season[i], tl.pa[i], tl.hr[i],
+               100.0 * tl.hr[i] / tl.pa[i], tl.w[i], tl.w[i] * tl.pa[i], tl.w[i] * tl.hr[i]);
+    printf("   total                               %7.1f   %7.1f\n", tl.pa_w, tl.hr_w);
     if (tl.nseasons < 3) printf("   (solo jugó %d de las 3 temporadas: se usan las que tiene)\n", tl.nseasons);
 
     /* ---- paso 2: el talento */
     printf("\n2) Talento · talent.c\n");
-    printf("   θ = Σ HR / Σ PA = %d / %d = %.2f %% por turno\n", tl.hr_sum, tl.pa_sum, 100 * tl.theta);
+    printf("   θ = Σ peso·HR / Σ peso·PA = %.1f / %.1f = %.2f %% por turno\n", tl.hr_w, tl.pa_w, 100 * tl.theta);
+    printf("   (sin pesos sería %d / %d = %.2f %%)\n", tl.hr_sum, tl.pa_sum, 100.0 * tl.hr_sum / tl.pa_sum);
 
     /* ---- resultado */
     printf("\nResultado\n");
@@ -287,7 +290,7 @@ int main(int argc, char **argv)
 
     if (!name) {
         /* ---- modo interactivo: pregunta jugador y temporada hasta que el usuario salga */
-        printf("\nAce of Diamond · Capa 0 · talento θ de un jugador con sus propios datos\n");
+        printf("\nAce of Diamond · Capa %d · talento θ de un jugador con sus propios datos\n", CAPA_ACTUAL);
         for (;;) {
             const Player *pl = ask_player(&ds);
             if (!pl) break;
