@@ -21,6 +21,4 @@ plt.title(f"{f0['jugador']} {f0['temporada']} · θ = {100 * float(f0['theta']):
 plt.xlabel("HR en la temporada")
 plt.ylabel("proporción de temporadas")
 plt.legend()
-salida = sys.argv[1].replace(".csv", ".png")
-plt.savefig(salida, dpi=150, bbox_inches="tight")
-print("Gráfica:", salida)
+plt.show()                     # abre la gráfica en una ventana; no guarda nada
