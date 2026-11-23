@@ -1,12 +1,13 @@
 /*
  * demo.c — Demo del talento: calcula, paso a paso, el θ de un jugador con la capa más
  * nueva (CAPA_ACTUAL): sus 3 temporadas anteriores con pesos w = 1, 0.8, 0.6 (capa 1),
- * mezcladas con la liga en una Beta(α, β) (capa 2).
+ * traducidas al ambiente de jonrones de la liga en t (capa 3) y mezcladas con la liga en
+ * una Beta(α, β) (capa 2).
  *
  * Usa data.c, prior.c y talent.c.
  *
  * Compilar, desde la carpeta del repositorio:
- *   gcc -std=c11 -O2 -Iengine/include engine/src/data.c engine/src/prior.c engine/src/talent.c engine/src/demo/demo.c -o demo
+ *   gcc -std=c11 -O2 -Iengine/include engine/src/data.c engine/src/prior.c engine/src/talent.c engine/src/demo/demo.c -lm -o demo
  *
  * Ejecutar:
  *   ./demo                              pregunta el jugador y la temporada
@@ -239,27 +240,31 @@ static int analyze(const Dataset *ds, const Player *pl, int t)
 
     /* ---- paso 1: sus temporadas anteriores */
     printf("\n1) Sus temporadas anteriores · talent.c\n");
-    printf("   año      PA    HR    HR/PA   peso   peso·PA   peso·HR\n");
+    printf("   año      PA    HR    HR/PA   λ liga     HR*   peso   peso·PA   peso·HR*\n");
     for (int i = 0; i < tl.nseasons; i++)
-        printf("   %d   %4d   %3d   %5.2f %%   %.1f   %7.1f   %7.1f\n", tl.season[i], tl.pa[i], tl.hr[i],
-               100.0 * tl.hr[i] / tl.pa[i], tl.w[i], tl.w[i] * tl.pa[i], tl.w[i] * tl.hr[i]);
-    printf("   total                               %7.1f   %7.1f\n", tl.pa_w, tl.hr_w);
+        printf("   %d   %4d   %3d   %5.2f %%   %5.2f %%   %5.1f   %.1f   %7.1f   %8.1f\n", tl.season[i], tl.pa[i], tl.hr[i],
+               100.0 * tl.hr[i] / tl.pa[i], 100 * tl.lambda_s[i], tl.hr_star[i], tl.w[i], tl.w[i] * tl.pa[i], tl.w[i] * tl.hr_star[i]);
+    printf("   total                                                 %7.1f   %8.1f\n", tl.pa_w, tl.hr_w);
+    const SeasonRow *hay_t = data_season(ds, pl->id, t);
+    printf("   λ de su liga en %d = %.2f %%%s\n", t, 100 * tl.lambda_t,
+           hay_t ? "" : " (todavía no hay datos de esa temporada: se usa el más reciente)");
+    printf("   HR* = PA · expit(logit(HR/PA) − logit λ de ese año + logit λ de %d): sus HR en el ambiente de %d\n", t, t);
     if (tl.nseasons < 3) printf("   (solo jugó %d de las 3 temporadas: se usan las que tiene)\n", tl.nseasons);
 
     /* ---- paso 2: el talento */
     printf("\n2) Talento · talent.c\n");
     const double tasa = tl.hr_w / tl.pa_w;
-    printf("   Tasa con pesos = Σ peso·HR / Σ peso·PA = %.1f / %.1f = %.2f %%", tl.hr_w, tl.pa_w, 100 * tasa);
+    printf("   Tasa con pesos = Σ peso·HR* / Σ peso·PA = %.1f / %.1f = %.2f %%", tl.hr_w, tl.pa_w, 100 * tasa);
     printf("   (sin pesos: %d / %d = %.2f %%)\n", tl.hr_sum, tl.pa_sum, 100.0 * tl.hr_sum / tl.pa_sum);
     if (CAPA_ACTUAL >= 2) {
         const Prior *L = &tl.liga;
         printf("\n3) La liga · prior.c\n");
-        printf("   %d temporadas de regulares (>= 300 PA) de %d a %d\n", L->J, t - 3, t - 1);
+        printf("   %d temporadas de regulares (>= 300 PA) de %d a %d, cada una traducida al ambiente de %d\n", L->J, t - 3, t - 1, t);
         printf("   promedio m = %.2f %%   varianza del talento v = %.2e   n0 = %.0f turnos\n", 100 * L->m, L->v, L->n0);
         printf("   La liga es como un jugador con %.1f HR en %.0f turnos: Beta(α0 = %.1f, β0 = %.1f)\n", L->a0, L->n0, L->a0, L->b0);
         printf("\n4) Jugador + liga (Bayes) · talent.c\n");
-        printf("   α = α0 + Σ peso·HR        = %.1f + %.1f = %.1f\n", L->a0, tl.hr_w, tl.alpha);
-        printf("   β = β0 + Σ peso·(PA − HR) = %.1f + %.1f = %.1f\n", L->b0, tl.pa_w - tl.hr_w, tl.beta);
+        printf("   α = α0 + Σ peso·HR*        = %.1f + %.1f = %.1f\n", L->a0, tl.hr_w, tl.alpha);
+        printf("   β = β0 + Σ peso·(PA − HR*) = %.1f + %.1f = %.1f\n", L->b0, tl.pa_w - tl.hr_w, tl.beta);
         printf("   θ = α / (α + β) = %.2f %%   (pesa %.0f %% el jugador y %.0f %% la liga)\n",
                100 * tl.theta, 100 * tl.peso_jugador, 100 * (1 - tl.peso_jugador));
     }

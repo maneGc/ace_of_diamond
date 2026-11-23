@@ -6,7 +6,7 @@ Para cada capa dibuja las mismas dos gráficas de la capa 0, una fila por capa y
   derecha:   cuántas temporadas caen abajo, dentro o arriba del rango del 80 % (lo ideal: 10 / 80 / 10)
 e imprime el error promedio y dónde cae lo real de cada capa.
 
-Uso:  python experimentos/comparar_capas.py                       (lee experimentos/capa2/comparacion.csv)
+Uso:  python experimentos/comparar_capas.py                       (lee experimentos/capa3/comparacion.csv)
       python experimentos/comparar_capas.py otra/comparacion.csv
 """
 import csv
@@ -15,15 +15,15 @@ from collections import defaultdict
 
 import matplotlib.pyplot as plt
 
-ruta = sys.argv[1] if len(sys.argv) > 1 else "experimentos/capa2/comparacion.csv"
+ruta = sys.argv[1] if len(sys.argv) > 1 else "experimentos/capa3/comparacion.csv"
 capas = defaultdict(list)
 for r in csv.DictReader(open(ruta, encoding="utf-8")):
-    capas[int(r["capa"])].append(r)
+    capas[r["capa"]].append(r)                                   # "0", "1", …, "3 predicción"
 
 fig, ejes = plt.subplots(len(capas), 2, figsize=(12, 5 * len(capas)), squeeze=False)
 tope = max(float(r["media"]) for filas in capas.values() for r in filas) + 5     # mismo eje x para todas
-print("capa   temporadas   error promedio   dentro del 80 %   abajo    arriba")
-for (izq, der), (capa, filas) in zip(ejes, sorted(capas.items())):
+print("          capa   temporadas   error promedio   dentro del 80 %   abajo    arriba")
+for (izq, der), (capa, filas) in zip(ejes, capas.items()):
     n = len(filas)
     esperado = [float(r["media"]) for r in filas]
     real = [int(r["real"]) for r in filas]
@@ -31,7 +31,7 @@ for (izq, der), (capa, filas) in zip(ejes, sorted(capas.items())):
     abajo = sum(int(r["real"]) < int(r["p10"]) for r in filas) / n
     arriba = sum(int(r["real"]) > int(r["p90"]) for r in filas) / n
     dentro = 1 - abajo - arriba
-    print(f"{capa:4d}   {n:10d}   {error:11.2f} HR   {100 * dentro:13.1f} %   {100 * abajo:5.1f} %  {100 * arriba:5.1f} %")
+    print(f"{capa:>14s}   {n:10d}   {error:11.2f} HR   {100 * dentro:13.1f} %   {100 * abajo:5.1f} %  {100 * arriba:5.1f} %")
 
     izq.scatter(esperado, real, s=4, alpha=0.2, color="#D86A3C")
     izq.plot([0, 75], [0, 75], "k--")

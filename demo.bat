@@ -15,7 +15,7 @@ where gcc >nul 2>nul || (
     goto end
 )
 echo Compilando demo.exe ...
-gcc -std=c11 -O2 -Iengine/include engine/src/data.c engine/src/prior.c engine/src/talent.c engine/src/demo/demo.c -o demo.exe || goto end
+gcc -std=c11 -O2 -Iengine/include engine/src/data.c engine/src/prior.c engine/src/talent.c engine/src/demo/demo.c -lm -o demo.exe || goto end
 
 :run
 "%~dp0demo.exe" %*

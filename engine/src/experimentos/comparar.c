@@ -9,6 +9,10 @@
  * Todas las capas usan la misma semilla en cada temporada: la diferencia entre capas
  * se debe solo a θ, no a la suerte de la simulación.
  *
+ * La capa más nueva se calcula dos veces:
+ *   modo análisis   (columna capa = 3):            con el ambiente λ real de la temporada t
+ *   modo predicción (columna capa = 3 predicción): con el λ de t − 1, como si t no hubiera empezado
+ *
  * Compilar:  gcc -std=c11 -O2 -Iengine/include engine/src/data.c engine/src/prior.c engine/src/talent.c engine/src/rng.c engine/src/simulacion.c engine/src/experimentos/comparar.c -lm -o comparar
  * Ejecutar:  ./comparar
  */
@@ -54,19 +58,23 @@ int main(void)
         if (s->season < DESDE || s->season > HASTA || s->season == 2020 || s->pa < MIN_PA) continue;
         const Player *pl = data_find_player(&ds, s->id);
         if (!pl) continue;
-        for (int capa = 0; capa <= CAPA_ACTUAL; capa++) {
+        for (int vuelta = 0; vuelta <= CAPA_ACTUAL + 1; vuelta++) {
+            const int prediccion = vuelta > CAPA_ACTUAL;                  /* última vuelta: la capa nueva sin ver t */
+            const int capa = prediccion ? CAPA_ACTUAL : vuelta;
+            ambiente_modo_prediccion(prediccion);
             Talent tl;
             if (talent_estimate(&ds, pl, s->season, capa, &tl)) break;      /* sin temporadas anteriores */
-            if (capa == 0) n++;
+            if (vuelta == 0) n++;
 
             long hist[HIST_MAX + 1];
             simular_talento(&tl, s->pa, N_SIM, 2001 + i, hist);           /* misma semilla en todas las capas */
             double suma = 0;
             for (int k = 0; k <= HIST_MAX; k++) suma += (double)k * hist[k];
 
-            fprintf(f, "%d,%s %s,%d,%d,%d,%.6f,%.2f,%d,%d\n", capa, pl->first, pl->last, s->season, s->pa, s->hr,
-                    tl.theta, suma / N_SIM, percentil(hist, 0.10), percentil(hist, 0.90));
+            fprintf(f, "%d%s,%s %s,%d,%d,%d,%.6f,%.2f,%d,%d\n", capa, prediccion ? " predicción" : "", pl->first, pl->last,
+                    s->season, s->pa, s->hr, tl.theta, suma / N_SIM, percentil(hist, 0.10), percentil(hist, 0.90));
         }
+        ambiente_modo_prediccion(0);
         if (n % 500 == 0) fprintf(stderr, "\r%d temporadas...", n);
     }
     fclose(f);

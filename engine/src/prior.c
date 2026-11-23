@@ -10,10 +10,15 @@
  *
  * La Beta(α0, β0) tiene promedio m y varianza v: es "un jugador típico de la liga".
  * Solo usa temporadas anteriores a t: no ve el futuro.
+ *
+ * Capa 3 (epoca = 1): antes de promediar, cada tasa se traduce al ambiente de la liga en t,
+ *   r* = expit(logit r − logit λ_s + logit λ_t),
+ * para que la liga del prior y el jugador estén en el mismo ambiente de jonrones.
  */
+#include <math.h>
 #include "aod.h"
 
-Prior prior_estimate(const Dataset *ds, int t, int years, int min_pa)
+Prior prior_estimate(const Dataset *ds, int t, int years, int min_pa, int epoca)
 {
     Prior pr = {0};
     double sum_r = 0, sum_r2 = 0, sum_inv = 0;
@@ -21,7 +26,11 @@ Prior prior_estimate(const Dataset *ds, int t, int years, int min_pa)
     for (int i = 0; i < ds->ns; i++) {
         const SeasonRow *s = &ds->s[i];
         if (s->season < t - years || s->season > t - 1 || s->pa < min_pa) continue;
-        const double r = (double)s->hr / s->pa;
+        double r = (double)s->hr / s->pa;
+        if (epoca && s->hr > 0) {                           /* capa 3: al ambiente de t */
+            const double lam_s = data_lambda(ds, s->season, s->league), lam_t = ambiente(ds, t, s->league);
+            if (!isnan(lam_s) && !isnan(lam_t)) r = expit(logit(r) - logit(lam_s) + logit(lam_t));
+        }
         sum_r += r; sum_r2 += r * r; sum_inv += 1.0 / s->pa;
         pr.J++;
     }
