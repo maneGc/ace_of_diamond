@@ -4,12 +4,12 @@
  *
  * Para cada temporada (1998–2025, sin 2020, con al menos 300 PA) y cada capa de 0 a CAPA_ACTUAL:
  *   1. θ con sus 3 temporadas anteriores                    (talent.c)
- *   2. N_SIM temporadas simuladas con Bernoulli(θ)          (simulacion.c)
+ *   2. N_SIM temporadas simuladas con Bernoulli(θ)          (simulacion.c; en la capa 2, θ ~ Beta)
  *   3. promedio y rango del 80 % (percentiles 10 y 90) → una fila del CSV
  * Todas las capas usan la misma semilla en cada temporada: la diferencia entre capas
  * se debe solo a θ, no a la suerte de la simulación.
  *
- * Compilar:  gcc -std=c11 -O2 -Iengine/include engine/src/data.c engine/src/talent.c engine/src/rng.c engine/src/simulacion.c engine/src/experimentos/comparar.c -o comparar
+ * Compilar:  gcc -std=c11 -O2 -Iengine/include engine/src/data.c engine/src/prior.c engine/src/talent.c engine/src/rng.c engine/src/simulacion.c engine/src/experimentos/comparar.c -lm -o comparar
  * Ejecutar:  ./comparar
  */
 #include <stdio.h>
@@ -60,7 +60,7 @@ int main(void)
             if (capa == 0) n++;
 
             long hist[HIST_MAX + 1];
-            simular_temporadas(tl.theta, s->pa, N_SIM, 2001 + i, hist);    /* misma semilla en todas las capas */
+            simular_talento(&tl, s->pa, N_SIM, 2001 + i, hist);           /* misma semilla en todas las capas */
             double suma = 0;
             for (int k = 0; k <= HIST_MAX; k++) suma += (double)k * hist[k];
 

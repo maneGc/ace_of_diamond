@@ -1,11 +1,12 @@
 /*
- * rng.c — Números aleatorios uniformes U(0,1).
+ * rng.c — Números aleatorios: uniforme U(0,1), normal N(0,1) y Gamma(k, 1).
  *
  * Generador: xoshiro256** (Blackman y Vigna), rápido y de alta calidad.
  * Semilla:   SplitMix64, que convierte un número cualquiera en los 4 valores
  *            iniciales del generador. Con la misma semilla salen los mismos
  *            números, así la simulación se puede repetir exactamente.
  */
+#include <math.h>
 #include "aod.h"
 
 static inline uint64_t rotl(uint64_t x, int k) { return (x << k) | (x >> (64 - k)); }
@@ -35,3 +36,30 @@ static inline uint64_t next(Rng *r)
 
 /* U(0,1): los 53 bits superiores convertidos a double */
 double rng_uniform(Rng *r) { return (double)(next(r) >> 11) * 0x1.0p-53; }
+
+/* N(0,1) por Box-Muller: con dos uniformes salen una distancia y un ángulo */
+double rng_normal(Rng *r)
+{
+    double u = rng_uniform(r), v = rng_uniform(r);
+    if (u < 1e-300) u = 1e-300;                        /* log(0) no existe */
+    return sqrt(-2.0 * log(u)) * cos(6.283185307179586 * v);
+}
+
+/*
+ * Gamma(k, 1) por el método de Marsaglia y Tsang (2000): se propone un valor con una normal
+ * y se acepta o se rechaza. Sirve para sortear la Beta: si X ~ Gamma(α) e Y ~ Gamma(β),
+ * entonces X / (X + Y) ~ Beta(α, β).
+ */
+double rng_gamma(Rng *r, double k)
+{
+    if (k < 1.0) return rng_gamma(r, k + 1.0) * pow(rng_uniform(r), 1.0 / k);
+    const double d = k - 1.0 / 3.0, c = 1.0 / sqrt(9.0 * d);
+    for (;;) {
+        double x, v;
+        do { x = rng_normal(r); v = 1.0 + c * x; } while (v <= 0.0);
+        v = v * v * v;
+        const double u = rng_uniform(r);
+        if (u < 1.0 - 0.0331 * x * x * x * x) return d * v;
+        if (log(u) < 0.5 * x * x + d * (1.0 - v + log(v))) return d * v;
+    }
+}

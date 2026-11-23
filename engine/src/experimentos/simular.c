@@ -1,7 +1,7 @@
 /*
  * simular.c — Calcula θ del jugador con una capa, simula sus temporadas y guarda un CSV para Python.
  *
- * Compilar:  gcc -std=c11 -O2 -Iengine/include engine/src/data.c engine/src/talent.c engine/src/rng.c engine/src/simulacion.c engine/src/experimentos/simular.c -o simular
+ * Compilar:  gcc -std=c11 -O2 -Iengine/include engine/src/data.c engine/src/prior.c engine/src/talent.c engine/src/rng.c engine/src/simulacion.c engine/src/experimentos/simular.c -lm -o simular
  * Ejecutar:  ./simular "Barry Bonds" 2001        (capa más nueva)
  *            ./simular "Barry Bonds" 2001 0      (capa 0)
  */
@@ -36,7 +36,7 @@ int main(int argc, char **argv)
     const int real = cur ? cur->hr : -1;                 /* HR que de verdad pegó; -1 si no hay datos */
 
     long hist[HIST_MAX + 1];
-    simular_temporadas(tl.theta, pa, N_SIM, 2001, hist);
+    simular_talento(&tl, pa, N_SIM, 2001, hist);                /* capa 2: θ ~ Beta en cada temporada */
 
     char ruta[128];
     snprintf(ruta, sizeof ruta, "experimentos/capa%d/%s_%d.csv", capa, pl->id, t);

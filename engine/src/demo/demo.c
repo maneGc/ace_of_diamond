@@ -1,12 +1,12 @@
 /*
  * demo.c — Demo del talento: calcula, paso a paso, el θ de un jugador con la capa más
- * nueva (CAPA_ACTUAL), solo con sus propios datos: θ = Σ w·HR / Σ w·PA de sus 3
- * temporadas anteriores, con pesos w = 1, 0.8, 0.6 (capa 1).
+ * nueva (CAPA_ACTUAL): sus 3 temporadas anteriores con pesos w = 1, 0.8, 0.6 (capa 1),
+ * mezcladas con la liga en una Beta(α, β) (capa 2).
  *
- * Usa data.c y talent.c.
+ * Usa data.c, prior.c y talent.c.
  *
  * Compilar, desde la carpeta del repositorio:
- *   gcc -std=c11 -O2 -Iengine/include engine/src/data.c engine/src/talent.c engine/src/demo/demo.c -o demo
+ *   gcc -std=c11 -O2 -Iengine/include engine/src/data.c engine/src/prior.c engine/src/talent.c engine/src/demo/demo.c -o demo
  *
  * Ejecutar:
  *   ./demo                              pregunta el jugador y la temporada
@@ -248,8 +248,21 @@ static int analyze(const Dataset *ds, const Player *pl, int t)
 
     /* ---- paso 2: el talento */
     printf("\n2) Talento · talent.c\n");
-    printf("   θ = Σ peso·HR / Σ peso·PA = %.1f / %.1f = %.2f %% por turno\n", tl.hr_w, tl.pa_w, 100 * tl.theta);
-    printf("   (sin pesos sería %d / %d = %.2f %%)\n", tl.hr_sum, tl.pa_sum, 100.0 * tl.hr_sum / tl.pa_sum);
+    const double tasa = tl.hr_w / tl.pa_w;
+    printf("   Tasa con pesos = Σ peso·HR / Σ peso·PA = %.1f / %.1f = %.2f %%", tl.hr_w, tl.pa_w, 100 * tasa);
+    printf("   (sin pesos: %d / %d = %.2f %%)\n", tl.hr_sum, tl.pa_sum, 100.0 * tl.hr_sum / tl.pa_sum);
+    if (CAPA_ACTUAL >= 2) {
+        const Prior *L = &tl.liga;
+        printf("\n3) La liga · prior.c\n");
+        printf("   %d temporadas de regulares (>= 300 PA) de %d a %d\n", L->J, t - 3, t - 1);
+        printf("   promedio m = %.2f %%   varianza del talento v = %.2e   n0 = %.0f turnos\n", 100 * L->m, L->v, L->n0);
+        printf("   La liga es como un jugador con %.1f HR en %.0f turnos: Beta(α0 = %.1f, β0 = %.1f)\n", L->a0, L->n0, L->a0, L->b0);
+        printf("\n4) Jugador + liga (Bayes) · talent.c\n");
+        printf("   α = α0 + Σ peso·HR        = %.1f + %.1f = %.1f\n", L->a0, tl.hr_w, tl.alpha);
+        printf("   β = β0 + Σ peso·(PA − HR) = %.1f + %.1f = %.1f\n", L->b0, tl.pa_w - tl.hr_w, tl.beta);
+        printf("   θ = α / (α + β) = %.2f %%   (pesa %.0f %% el jugador y %.0f %% la liga)\n",
+               100 * tl.theta, 100 * tl.peso_jugador, 100 * (1 - tl.peso_jugador));
+    }
 
     /* ---- resultado */
     printf("\nResultado\n");
