@@ -25,5 +25,9 @@ experimentos/capa3/*
 !experimentos/capa3/.gitkeep
 experimentos/capa4/*
 !experimentos/capa4/.gitkeep
+experimentos/iconicas/*
+!experimentos/iconicas/.gitkeep
 /comparar
 /comparar.exe
+/iconicas
+/iconicas.exe
