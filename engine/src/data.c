@@ -44,11 +44,13 @@ int data_load(Dataset *ds, const char *dir)
     cap = 32768; ds->s = malloc(cap * sizeof *ds->s);
     if (!fgets(line, sizeof line, fh)) { fclose(fh); return 1; }   /* encabezado */
     while (fgets(line, sizeof line, fh)) {
-        if (split(line, f, 8) < 5) continue;
+        const int nf = split(line, f, 8);
+        if (nf < 5) continue;
         if (ds->ns == cap) ds->s = realloc(ds->s, (cap *= 2) * sizeof *ds->s);
         SeasonRow *r = &ds->s[ds->ns++];
         snprintf(r->id, sizeof r->id, "%s", f[0]);
         r->season = atoi(f[1]); r->pa = atoi(f[2]); r->hr = atoi(f[3]); r->league = f[4][0];
+        r->parque = nf > 5 ? atof(f[5]) : 0.0;                 /* capa 4: columna "parque" */
     }
     fclose(fh);
 

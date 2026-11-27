@@ -23,5 +23,7 @@ experimentos/capa2/*
 !experimentos/capa2/.gitkeep
 experimentos/capa3/*
 !experimentos/capa3/.gitkeep
+experimentos/capa4/*
+!experimentos/capa4/.gitkeep
 /comparar
 /comparar.exe

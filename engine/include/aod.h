@@ -8,6 +8,8 @@
  *                        el jugador se mezcla con la liga y su talento ya no es un número fijo
  *   capa 3 (época):      antes de sumar, cada temporada pasada se traduce al ambiente de
  *                        jonrones de la liga en t: HR* = PA·expit(logit(HR/PA) − logit λ_s + logit λ_t)
+ *   capa 4 (estadio):    también se traduce a los estadios donde bateó en t:
+ *                        HR* = PA·expit(logit(HR/PA) − logit λ_s + logit λ_t − parque_s + parque_t)
  *
  *   data.c        lectura de los CSV de data/inputs/ y el ambiente λ de cada liga
  *   prior.c       la liga: Beta(α0, β0) por el método de momentos (capa 2)
@@ -21,7 +23,9 @@
 #include <stdint.h>
 
 /* ---------------------------------------------------------------- datos */
-typedef struct { char id[12]; int season; int pa; int hr; char league; } SeasonRow;
+typedef struct { char id[12]; int season; int pa; int hr; char league; double parque; } SeasonRow;
+/* parque: promedio sobre sus turnos de log(factor de estadio) en esa temporada (capa 4).
+ * 0 = estadios neutros; +0.2 ≈ 22 % más jonrones (Coors Field); −0.13 ≈ 12 % menos. */
 typedef struct { char id[12]; char first[48]; char last[48]; } Player;
 typedef struct { int season; char league; long pa; long hr; } LeagueRow;
 
@@ -53,11 +57,12 @@ typedef struct {
     double m, s2, noise, v;            /* promedio, varianza, parte de suerte, parte de talento */
     double n0, a0, b0;                 /* Beta(α0, β0) de la liga, n0 = α0 + β0 */
 } Prior;
-/* epoca = 1: cada tasa se traduce al ambiente de t antes de promediar (capa 3) */
-Prior prior_estimate(const Dataset *ds, int t, int years, int min_pa, int epoca);
+/* capa >= 3: cada tasa se traduce al ambiente de la liga en t antes de promediar
+ * capa >= 4: y a los estadios del jugador en t (parque_t), quitando los del regular */
+Prior prior_estimate(const Dataset *ds, int t, int years, int min_pa, int capa, double parque_t);
 
 /* ---------------------------------------------------------------- talento del jugador */
-#define CAPA_ACTUAL 3                  /* la capa más nueva de esta rama */
+#define CAPA_ACTUAL 4                  /* la capa más nueva de esta rama */
 typedef struct {
     int    nseasons;                   /* temporadas anteriores con turnos (0 a 3) */
     int    season[3], pa[3], hr[3];    /* t−1, t−2, t−3 (las que existan) */
@@ -65,6 +70,7 @@ typedef struct {
     int    pa_sum, hr_sum;             /* Σ PA y Σ HR (sin pesos) */
     double lambda_s[3], hr_star[3];    /* capa 3: λ de su liga en cada temporada y HR traducidos a t */
     double lambda_t;                   /* capa 3: λ de su liga en t (ver ambiente) */
+    double parque_s[3], parque_t;      /* capa 4: sus estadios en cada temporada y en t */
     double pa_w, hr_w;                 /* Σ w·PA y Σ w·HR (en la capa 3, Σ w·HR*) */
     Prior  liga;                       /* capa 2: la liga en t−3 … t−1 */
     double alpha, beta;                /* capa 2: θ ~ Beta(α, β); en capas 0 y 1 valen 0 */
@@ -72,7 +78,7 @@ typedef struct {
     double theta;                      /* capas 0 y 1: Σ w·HR / Σ w·PA · capa 2: α / (α + β) */
 } Talent;
 /* capa = 0: todas las temporadas pesan 1 · capa = 1: pesos 1, 0.8, 0.6 · capa = 2: pesos + Beta
- * capa = 3: pesos + Beta + época */
+ * capa = 3: pesos + Beta + época · capa = 4: pesos + Beta + época + estadio */
 int talent_estimate(const Dataset *ds, const Player *pl, int t, int capa, Talent *out);   /* 0 = ok */
 
 /* ---------------------------------------------------------------- números aleatorios */

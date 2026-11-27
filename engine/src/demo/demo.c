@@ -1,8 +1,8 @@
 /*
  * demo.c — Demo del talento: calcula, paso a paso, el θ de un jugador con la capa más
  * nueva (CAPA_ACTUAL): sus 3 temporadas anteriores con pesos w = 1, 0.8, 0.6 (capa 1),
- * traducidas al ambiente de jonrones de la liga en t (capa 3) y mezcladas con la liga en
- * una Beta(α, β) (capa 2).
+ * traducidas al ambiente de jonrones de la liga en t (capa 3) y a los estadios donde bateó
+ * en t (capa 4), y mezcladas con la liga en una Beta(α, β) (capa 2).
  *
  * Usa data.c, prior.c y talent.c.
  *
@@ -16,6 +16,7 @@
  *   ./demo bondb001 2001                también acepta el id de Retrosheet
  */
 #include <ctype.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -240,15 +241,17 @@ static int analyze(const Dataset *ds, const Player *pl, int t)
 
     /* ---- paso 1: sus temporadas anteriores */
     printf("\n1) Sus temporadas anteriores · talent.c\n");
-    printf("   año      PA    HR    HR/PA   λ liga     HR*   peso   peso·PA   peso·HR*\n");
+    printf("   año      PA    HR    HR/PA   λ liga   estadios     HR*   peso   peso·PA   peso·HR*\n");
     for (int i = 0; i < tl.nseasons; i++)
-        printf("   %d   %4d   %3d   %5.2f %%   %5.2f %%   %5.1f   %.1f   %7.1f   %8.1f\n", tl.season[i], tl.pa[i], tl.hr[i],
-               100.0 * tl.hr[i] / tl.pa[i], 100 * tl.lambda_s[i], tl.hr_star[i], tl.w[i], tl.w[i] * tl.pa[i], tl.w[i] * tl.hr_star[i]);
-    printf("   total                                                 %7.1f   %8.1f\n", tl.pa_w, tl.hr_w);
+        printf("   %d   %4d   %3d   %5.2f %%   %5.2f %%   %+5.0f %%   %5.1f   %.1f   %7.1f   %8.1f\n", tl.season[i], tl.pa[i], tl.hr[i],
+               100.0 * tl.hr[i] / tl.pa[i], 100 * tl.lambda_s[i], 100 * (exp(tl.parque_s[i]) - 1), tl.hr_star[i],
+               tl.w[i], tl.w[i] * tl.pa[i], tl.w[i] * tl.hr_star[i]);
+    printf("   total                                                           %7.1f   %8.1f\n", tl.pa_w, tl.hr_w);
     const SeasonRow *hay_t = data_season(ds, pl->id, t);
     printf("   λ de su liga en %d = %.2f %%%s\n", t, 100 * tl.lambda_t,
            hay_t ? "" : " (todavía no hay datos de esa temporada: se usa el más reciente)");
-    printf("   HR* = PA · expit(logit(HR/PA) − logit λ de ese año + logit λ de %d): sus HR en el ambiente de %d\n", t, t);
+    printf("   Sus estadios en %d: %+.0f %% de jonrones respecto a un estadio neutro\n", t, 100 * (exp(tl.parque_t) - 1));
+    printf("   HR* = sus HR traducidos al ambiente de la liga y a sus estadios de %d\n", t);
     if (tl.nseasons < 3) printf("   (solo jugó %d de las 3 temporadas: se usan las que tiene)\n", tl.nseasons);
 
     /* ---- paso 2: el talento */

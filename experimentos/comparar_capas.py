@@ -6,7 +6,7 @@ Para cada capa dibuja las mismas dos gráficas de la capa 0, una fila por capa y
   derecha:   cuántas temporadas caen abajo, dentro o arriba del rango del 80 % (lo ideal: 10 / 80 / 10)
 e imprime el error promedio y dónde cae lo real de cada capa.
 
-Uso:  python experimentos/comparar_capas.py                       (lee experimentos/capa3/comparacion.csv)
+Uso:  python experimentos/comparar_capas.py                       (lee experimentos/capa4/comparacion.csv)
       python experimentos/comparar_capas.py otra/comparacion.csv
 """
 import csv
@@ -15,10 +15,10 @@ from collections import defaultdict
 
 import matplotlib.pyplot as plt
 
-ruta = sys.argv[1] if len(sys.argv) > 1 else "experimentos/capa3/comparacion.csv"
+ruta = sys.argv[1] if len(sys.argv) > 1 else "experimentos/capa4/comparacion.csv"
 capas = defaultdict(list)
 for r in csv.DictReader(open(ruta, encoding="utf-8")):
-    capas[r["capa"]].append(r)                                   # "0", "1", …, "3 predicción"
+    capas[r["capa"]].append(r)                                   # "0", "1", …, "4"
 
 fig, ejes = plt.subplots(len(capas), 2, figsize=(12, 5 * len(capas)), squeeze=False)
 tope = max(float(r["media"]) for filas in capas.values() for r in filas) + 5     # mismo eje x para todas
